@@ -161,7 +161,17 @@ spec:
             - name: BITNAMI_DEBUG
               value: {{ ternary "true" "false" (or .Values.image.debug .Values.diagnosticMode.enabled) | quote }}
             - name: KAFKA_HEAP_OPTS
-              value: {{ coalesce .Values.controller.heapOpts .Values.heapOpts | quote }}
+              value: |
+                {{- if .Values.kraftModeEnabled }}
+                {{- $heapOpts := coalesce .Values.broker.heapOpts .Values.heapOpts }}
+                {{- if lt (int $heapOpts) 1024 }}
+                "-Xmx1G"
+                {{- else }}
+                {{ $heapOpts | quote }}
+                {{- end }}
+                {{- else }}
+                {{ coalesce .Values.broker.heapOpts .Values.heapOpts | quote }}
+                {{- end }}
             - name: KAFKA_KRAFT_CLUSTER_ID
               valueFrom:
                 secretKeyRef:
